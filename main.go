@@ -139,10 +139,10 @@ func FetchPR(url string) (PRData, error) {
 
 type RenderData struct {
 	Header string
-	PRs    map[string]PRData
+	PRs    map[string][]PRData
 }
 
-func Render(cfg cfg, header string, prs map[string]PRData) error {
+func Render(cfg cfg, header string, prs map[string][]PRData) error {
 	data := RenderData{Header: header, PRs: prs}
 	var tmpl *template.Template
 	if cfg.mdEnabled {
@@ -186,7 +186,7 @@ func Run(cfg cfg) error {
 		return err
 	}
 
-	prs := make(map[string]PRData)
+	prs := make(map[string][]PRData)
 	for _, entry := range config.Contributions {
 		for url, meta := range entry {
 			pr, err := FetchPR(url)
@@ -194,7 +194,7 @@ func Run(cfg cfg) error {
 				return err
 			}
 			_ = meta
-			prs[url] = pr
+			prs[pr.Base.Repo.Name] = append(prs[pr.Base.Repo.Name], pr)
 		}
 	}
 	return Render(cfg, config.Header, prs)
