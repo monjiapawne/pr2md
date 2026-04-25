@@ -1,0 +1,29 @@
+{{define "pr" -}}
+
+<details>
+<summary>
+  <a href="{{.HTMLURL}}">{{.Title}}</a> ·
+  <code>PR</code> · <code>↑{{.Additions}} ↓{{.Deletions}}</code> ·
+  <code>{{dateFormat .MergedAt}}</code>
+</summary>
+
+**Issues:** {{range .Issues}}{{.}} {{end}}  
+
+**Body**:
+
+{{.Body}}
+
+<details>
+<summary>Comments</summary>
+
+{{range .Comments}}
+`{{.UserLogin}}`  
+{{.Comment}}
+
+---
+{{end}}
+
+</details>
+</details>
+
+{{end}}

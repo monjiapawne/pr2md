@@ -1,0 +1,18 @@
+header: |-
+  +++
+  date = '2026-04-22T21:19:13-04:00'
+  title = 'OSS Contributions'
+  weight = 1
+  bookCollapseSection = true
+  +++
+
+  # OSS Contributions
+
+contributions:
+- https://api.github.com/repos/alecthomas/chroma/pulls/1247:
+    note: Small regex fix for gas x86-64 syntax highlighting
+- https://api.github.com/repos/MISP/misp-docker/pulls/301:
+    note: containerized misp guard
+- https://api.github.com/repos/MISP/misp-docker/pulls/330:
+    note: hello
+

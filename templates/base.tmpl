@@ -1,0 +1,7 @@
+{{define "base" -}}
+{{.Header}}
+{{range .PRs}}
+{{template "repo" .Base.Repo}}
+{{template "pr" .}}
+{{end}}
+{{- end}}
