@@ -48,7 +48,7 @@ func extractIssues(body string) []string {
 	return issues
 }
 
-type prResponse struct {
+type PRData struct {
 	// PR
 	Title     string    `json:"title"`
 	Body      string    `json:"body"`
@@ -77,44 +77,41 @@ type prResponse struct {
 	} `json:"-"`
 }
 
-func (p *prResponse) UnmarshalJSON(data []byte) error {
-	type Alias prResponse
+func (p *PRData) UnmarshalJSON(data []byte) error {
+	type Alias PRData
 	if err := json.Unmarshal(data, (*Alias)(p)); err != nil {
 		return err
 	}
 	p.Issues = extractIssues(p.Body)
-
 	return nil
 }
 
 type Config struct {
-	Header        string     `yaml:"header"`
-	Contributions InputRepos `yaml:"contributions"`
+	Header        string        `yaml:"header"`
+	Contributions Contributions `yaml:"contributions"`
 }
 
-type InputRepo struct {
+type Contribution struct {
 	Note string `yaml:"note"`
 }
-type InputRepos []map[string]InputRepo
+type Contributions []map[string]Contribution
 
-func getData(url string) (prResponse, error) {
-	var data prResponse
+func FetchPR(url string) (PRData, error) {
+	var pr PRData
 
 	resp, err := http.Get(url)
 	if err != nil {
-		return data, err
+		return pr, err
 	}
 	defer resp.Body.Close()
 
-	// Store the parsed prResponse in data
-	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-		return data, err
+	if err := json.NewDecoder(resp.Body).Decode(&pr); err != nil {
+		return pr, err
 	}
 
-	// Get comments
-	respComments, err := http.Get(data.CommentURL)
+	respComments, err := http.Get(pr.CommentURL)
 	if err != nil {
-		return data, err
+		return pr, err
 	}
 	defer respComments.Body.Close()
 
@@ -125,10 +122,10 @@ func getData(url string) (prResponse, error) {
 		} `json:"user"`
 	}
 	if err := json.NewDecoder(respComments.Body).Decode(&rawComments); err != nil {
-		return data, err
+		return pr, err
 	}
 	for _, c := range rawComments {
-		data.Comments = append(data.Comments, struct {
+		pr.Comments = append(pr.Comments, struct {
 			Comment   string `json:"-"`
 			UserLogin string `json:"-"`
 		}{
@@ -137,17 +134,16 @@ func getData(url string) (prResponse, error) {
 		})
 	}
 
-	return data, nil
-
+	return pr, nil
 }
 
-type TemplateData struct {
+type RenderData struct {
 	Header string
-	PRs    map[string]prResponse
+	PRs    map[string]PRData
 }
 
-func renderData(cfg cfg, header string, prs map[string]prResponse) error {
-	data := TemplateData{Header: header, PRs: prs}
+func Render(cfg cfg, header string, prs map[string]PRData) error {
+	data := RenderData{Header: header, PRs: prs}
 	var tmpl *template.Template
 	if cfg.mdEnabled {
 		var err error
@@ -179,8 +175,6 @@ func renderData(cfg cfg, header string, prs map[string]prResponse) error {
 }
 
 func Run(cfg cfg) error {
-	//--- Setup ---
-	// read yaml
 	file, err := os.Open(configPath)
 	if err != nil {
 		return err
@@ -192,10 +186,10 @@ func Run(cfg cfg) error {
 		return err
 	}
 
-	prs := make(map[string]prResponse)
+	prs := make(map[string]PRData)
 	for _, entry := range config.Contributions {
 		for url, meta := range entry {
-			pr, err := getData(url)
+			pr, err := FetchPR(url)
 			if err != nil {
 				return err
 			}
@@ -203,5 +197,5 @@ func Run(cfg cfg) error {
 			prs[url] = pr
 		}
 	}
-	return renderData(cfg, config.Header, prs)
+	return Render(cfg, config.Header, prs)
 }
